@@ -1,7 +1,7 @@
-import { useEffect } from "react";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { todoApi } from "../api/todos";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Detail() {
   const { id } = useParams();
@@ -13,23 +13,28 @@ export default function Detail() {
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
 
-  useEffect(() => {
-    const fetchDetail = async () => {
-      try {
-        const response = await todoApi(`/todos/${id}`);
-        setData(response.data);
-      } catch (err) {
-        setError(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const {
+    data: todos,
+    isPending,
+    isError,
+  } = useQuery({
+    queryKey: ["todos"],
+    queryFn: fetchDetail,
+  });
 
-    fetchDetail();
-  }, [id]);
+  const fetchDetail = async () => {
+    try {
+      const response = await todoApi(`/todos/${id}`);
+      return response.data;
+    } catch (err) {
+      setError(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  if (isLoading) return <div style={{ fontSize: 36 }}>로딩중...</div>;
-  if (error) {
+  if (isPending) return <div style={{ fontSize: 36 }}>로딩중...</div>;
+  if (isError) {
     console.error(error);
     return (
       <div style={{ fontSize: 24 }}>에러가 발생했습니다: {error.message}</div>
@@ -39,9 +44,9 @@ export default function Detail() {
   return (
     <div>
       <button onClick={() => navigate("/")}>홈으로 이동</button>
-      <p>제목: {data.title}</p>
-      <p>내용: {data.contents}</p>
-      <p>작성일자: {new Date(data.createdAt).toDateString()}</p>
+      <p>제목: {todos.title}</p>
+      <p>내용: {todos.contents}</p>
+      <p>작성일자: {new Date(todos.createdAt).toDateString()}</p>
     </div>
   );
 }

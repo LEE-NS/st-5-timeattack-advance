@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { todoApi } from "../api/todos";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function TodoForm({ fetchData }) {
   const [title, setTitle] = useState("");
@@ -17,8 +18,23 @@ export default function TodoForm({ fetchData }) {
       isCompleted: false,
       createdAt: Date.now(),
     });
-    await fetchData();
+    mutation.mutate({
+      id: Date.now().toString(),
+      title,
+      contents,
+      isCompleted: false,
+      createdAt: Date.now(),
+    });
   };
+
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: handleAddTodo,
+    onSuccess: () => {
+      queryClient.invalidateQueries(["todos"]);
+    },
+  });
 
   return (
     <form onSubmit={handleAddTodo}>
